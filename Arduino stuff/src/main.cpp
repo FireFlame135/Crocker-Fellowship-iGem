@@ -13,22 +13,22 @@ void setup() {
 }
 
 void loop() {
-  // RED
+  // Red light, flash for half a second
   carrier.leds.fill(carrier.leds.Color(255, 0, 0), 0, 5);
   carrier.leds.show();
   delay(500);
 
-  // GREEN
+  // Green light, flash for half a second
   carrier.leds.fill(carrier.leds.Color(0, 255, 0), 0, 5);
   carrier.leds.show();
   delay(500);
 
-  // BLUE
+  // Blue light, flash for half a second
   carrier.leds.fill(carrier.leds.Color(0, 0, 255), 0, 5);
   carrier.leds.show();
   delay(500);
 
-  // WHITE (All colors mixed)
+  // White light (all colors mixed), flash for half a second
   carrier.leds.fill(carrier.leds.Color(255, 255, 255), 0, 5);
   carrier.leds.show();
   delay(500);
