@@ -1,30 +1,51 @@
 #include <Arduino.h>
-#include <Arduino_MKRIoTCarrier.h>
 
-MKRIoTCarrier carrier;
-int ledPin = A1; // Use Pin 1 for a breadboard LED
-int buttonPin = A3; // Use Pin 3 for a breadboard button
+int redPin = A2;
+int greenPin = A1;
+int buttonPin = A5;
+
+bool buttonWasReleased = true; 
 
 void setup() {
-  // The carrier board is not in the plastic case right now so we set this to false
-  // This helps the library adjust brightness and other settings, especially with the capacitive touch sensors, accordingly
-  CARRIER_CASE = false;
-  
-  // Initializing the carrier board, so it knows that we are using it
-  //carrier.begin();
-
-  pinMode(ledPin, OUTPUT);
-  // INPUT_PULLUP makes the pin "HIGH" by default. 
-  //Basically, it adds the pullup resistor so that we don't need to add an external one, which is pretty lit
- // When you press the button to GND, it becomes "LOW".
+  pinMode(redPin, OUTPUT);
+  pinMode(greenPin, OUTPUT);
   pinMode(buttonPin, INPUT_PULLUP);
 }
 
 void loop() {
-  // Check if button is pressed (connected to GND)
-  if (digitalRead(buttonPin) == LOW) {
-    digitalWrite(ledPin, HIGH); // LED ON
-  } else {
-    digitalWrite(ledPin, LOW);  // LED OFF
+  int buttonState = digitalRead(buttonPin);
+
+  // Check for button press
+  if (buttonState == LOW && buttonWasReleased) {
+    
+    // 1. Pick the winner FIRST
+    int choice = random(0, 10); 
+    int winningPin;
+
+    if (choice < 4) {
+      winningPin = redPin;
+    } else {
+      winningPin = greenPin;
+    }
+
+    // 2. Flash ONLY the winning color for 3 seconds
+    // (10 cycles of 150ms ON + 150ms OFF = 3 seconds)
+    for (int i = 0; i < 10; i++) {
+      digitalWrite(winningPin, HIGH);
+      delay(150);
+      digitalWrite(winningPin, LOW);
+      delay(150);
+    }
+
+    // 3. Make sure it ends in the OFF state
+    digitalWrite(winningPin, LOW);
+
+    buttonWasReleased = false; 
+  }
+
+  // Reset and keep the random seed moving while waiting
+  if (buttonState == HIGH) {
+    buttonWasReleased = true;
+    randomSeed(micros()); 
   }
 }
