@@ -7,8 +7,8 @@
 #include <WiFiNINA.h> // The "driver" that tells the WiFi chip how to connect
 
 // Wifi Network Credentials
-const char* ssid = "Hardy Party";
-const char* password = "timmyg456";
+// const char* ssid = "Jordan's S23 FE";
+// const char* password = "jesuslovesyou";
 WiFiServer server(80); // Create a server that listens on port 80
 
 // Hardware Pin Definitions
@@ -19,6 +19,7 @@ int sensorPin = A5; // Light sensor (LDR or Photodiode) connected to Analog Pin 
 // Configuration Settings
 int threshold = 700;   // The light level that triggers flashing light
 bool isTriggered = false; // "Lock" to prevent the game from looping
+bool testPushed = false;  // Flag to indicate if the test button was pushed
 
 void setup() {
   // Initialize Hardware and Serial Communication
@@ -26,8 +27,9 @@ void setup() {
   pinMode(greenPin, OUTPUT);
   Serial.begin(9600); 
 
-  // Wifi Stuff
-  while (!Serial); 
+  // Wait for Serial Monitor with a 5-second timeout so it doesn't hang forever
+  unsigned long startWait = millis();
+  while (!Serial && millis() - startWait < 5000); 
 
   if (WiFi.status() == WL_NO_MODULE) {
     Serial.println("Communication with WiFi module failed!");
@@ -38,9 +40,10 @@ void setup() {
   Serial.println(ssid);
 
   while (WiFi.status() != WL_CONNECTED) {
+    // FIXED: Added 'password' back in so it can connect to your S23 FE
     WiFi.begin(ssid, password);
     Serial.print(".");
-    delay(1000);
+    delay(2000); // 2 seconds is better for mobile hotspots
   }
 
   Serial.println("\nConnected!");
@@ -48,13 +51,12 @@ void setup() {
   Serial.println(WiFi.localIP());
 
   server.begin(); // Start the web server
-  delay(10000); // Wait for 10 seconds before starting the main loop
 }
 
 void loop() {
   int lightLevel = analogRead(sensorPin);
   
-  // --- NEW: WEB SERVER LOGIC ---
+  // --- WEB SERVER LOGIC ---
   WiFiClient client = server.available(); 
   if (client) {                             
     String currentLine = "";                
@@ -63,46 +65,43 @@ void loop() {
         char c = client.read();             
         if (c == '\n') {                    
           if (currentLine.length() == 0) {
-            // Send standard HTTP response header
             client.println("HTTP/1.1 200 OK");
             client.println("Content-type:text/html");
             client.println();
-            // What you see on your phone:
             client.print("<h1>AllSafe Dino Remote</h1>");
-            client.print("<p><a href=\"/T\">[ CLICK TO TEST ]</a></p>");
+            client.print("<p><a href=\"/T\" style='font-size:50px;'>[ CLICK TO TEST ]</a></p>");
             client.println();
             break;
           } else { currentLine = ""; }
         } else if (c != '\r') { currentLine += c; }
 
-        // Check if the user clicked the link
         if (currentLine.endsWith("GET /T")) {
-           isTriggered = false; // Force a reset so the sequence can run
-           lightLevel = 999;    // "Fake" a light trigger to bypass the if-statement below
+           testPushed = true;    // This is our "Go" signal
         }
       }
     }
-    client.stop(); // Close the connection
+    client.stop(); 
   }
 
-  // Print the light level to the Serial Monitor
-  Serial.print("Light Level: ");
-  Serial.println(lightLevel);
-
-  // --- YOUR ORIGINAL TRIGGER LOGIC ---
-  if (lightLevel > threshold && !isTriggered) {
+  // --- TRIGGER LOGIC ---
+  // If the button was pushed, run the sequence ONCE
+  if (testPushed) {
     
-    int choice = random(0, 10); 
     int winningPin;
 
-    if (choice < 4) {
-      winningPin = redPin;
+    // 1. DECIDE: Look at the light level right now
+    if (lightLevel > threshold) {
+      winningPin = redPin;   // It's Bright!
+      Serial.println("Result: Red");
     } else {
-      winningPin = greenPin;
+      winningPin = greenPin; // It's Dark!
+      Serial.println("Result: Green");
     }
     
-    delay(3000); 
+    // 2. DELAY: Optional 1s pause for suspense
+    delay(500); 
 
+    // 3. ACTION: Flash the chosen LED 10 times
     for (int i = 0; i < 10; i++) {
       digitalWrite(winningPin, HIGH);
       delay(150);
@@ -110,12 +109,13 @@ void loop() {
       delay(150);
     }
 
-    digitalWrite(winningPin, LOW);
-    isTriggered = true; 
+    // 4. RESET: Set testPushed to false so it stops until the next click
+    testPushed = false; 
+    isTriggered = true; // Prevents re-triggering until light reset if needed
   }
 
-  if (lightLevel < (threshold - 50)) {
+  // Reset logic for the light sensor threshold
+  if (analogRead(sensorPin) < (threshold - 50)) {
     isTriggered = false;
-    randomSeed(micros()); 
   }
 }
