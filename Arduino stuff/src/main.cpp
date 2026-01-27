@@ -1,121 +1,166 @@
-/* * Project: iGem Dino Prototype (Bootcamp)
- * Board: Arduino MKR WiFi 1010
+/* * ======================================================================================
+ * Project:      AllSafe Food Scanner v1.0
+ * File Path:    src/main.cpp
+ * Description:  
+ * This file acts as the central controller for the device. It performs three main roles:
+ * 1. Hardware Management: Initializes GPIO pins for LEDs and reads analog sensor data.
+ * 2. Network Server: Connects to WiFi and establishes a web server on port 80.
+ * 3. Request Handling: implementing a "No-Refresh" AJAX workflow. It serves the 
+ * frontend interface in fragmented packets to preserve memory and handles 
+ * background scan requests (/T) by returning raw text data.
+ * ======================================================================================
  */
 
-#include <Arduino.h> // Base Arduino functions
-#include <SPI.h>     // Provides the "highway" to the WiFi chip
-#include <WiFiNINA.h> // The "driver" that tells the WiFi chip how to connect
+#include <Arduino.h> 
+#include <SPI.h>
+#include <WiFiNINA.h>
+#include "website.h" 
 
-// Wifi Network Credentials
-// const char* ssid = "Jordan's S23 FE";
-// const char* password = "jesuslovesyou";
-WiFiServer server(80); // Create a server that listens on port 80
+// --- NETWORK CONFIGURATION ---
+const char* ssid = "Goodfellas 2.4GHz"; 
+const char* password = "forgetaboutit";
 
-// Hardware Pin Definitions
-int redPin = A2;    // Red LED connected to Analog Pin 2
-int greenPin = A1;  // Green LED connected to Analog Pin 1
-int sensorPin = A5; // Light sensor (LDR or Photodiode) connected to Analog Pin 5
+WiFiServer server(80); 
 
-// Configuration Settings
-int threshold = 700;   // The light level that triggers flashing light
-bool isTriggered = false; // "Lock" to prevent the game from looping
-bool testPushed = false;  // Flag to indicate if the test button was pushed
+// --- HARDWARE PIN ASSIGNMENTS ---
+const int redPin = A2;    
+const int greenPin = A1;  
+const int sensorPin = A5; 
+
+// --- SENSOR CALIBRATION ---
+// Threshold determines the transition point between "Safe" and "Unsafe" readings.
+const int threshold = 700;      
 
 void setup() {
-  // Initialize Hardware and Serial Communication
+  // Initialize hardware pins
   pinMode(redPin, OUTPUT);
   pinMode(greenPin, OUTPUT);
+  
+  // Initialize serial communication for debugging
   Serial.begin(9600); 
 
-  // Wait for Serial Monitor with a 5-second timeout so it doesn't hang forever
+  // Wait for serial monitor to open (with 5-second timeout for standalone operation)
   unsigned long startWait = millis();
   while (!Serial && millis() - startWait < 5000); 
 
+  // Check for WiFi hardware
   if (WiFi.status() == WL_NO_MODULE) {
-    Serial.println("Communication with WiFi module failed!");
+    Serial.println("WiFi Module Failed!");
     while (true);
   }
 
-  Serial.print("Attempting to connect to SSID: ");
+  // Attempt to connect to the WiFi network
+  Serial.print("Connecting to: ");
   Serial.println(ssid);
 
   while (WiFi.status() != WL_CONNECTED) {
-    // FIXED: Added 'password' back in so it can connect to your S23 FE
     WiFi.begin(ssid, password);
     Serial.print(".");
-    delay(2000); // 2 seconds is better for mobile hotspots
+    delay(2000); 
   }
 
+  // Output connection details
   Serial.println("\nConnected!");
   Serial.print("IP Address: ");
   Serial.println(WiFi.localIP());
-
-  server.begin(); // Start the web server
+  
+  server.begin(); 
 }
 
 void loop() {
-  int lightLevel = analogRead(sensorPin);
-  
-  // --- WEB SERVER LOGIC ---
   WiFiClient client = server.available(); 
-  if (client) {                             
+
+  if (client) {                     
     String currentLine = "";                
+    String requestPath = ""; 
+
+    // Process the incoming client request
     while (client.connected()) {            
       if (client.available()) {             
         char c = client.read();             
-        if (c == '\n') {                    
-          if (currentLine.length() == 0) {
-            client.println("HTTP/1.1 200 OK");
-            client.println("Content-type:text/html");
-            client.println();
-            client.print("<h1>AllSafe Dino Remote</h1>");
-            client.print("<p><a href=\"/T\" style='font-size:50px;'>[ CLICK TO TEST ]</a></p>");
-            client.println();
-            break;
-          } else { currentLine = ""; }
-        } else if (c != '\r') { currentLine += c; }
+        
+        // Accumulate characters to detect the request type (GET /T vs GET /)
+        // Limiting length prevents memory exhaustion on long headers
+        if (currentLine.length() < 100) currentLine += c;
 
-        if (currentLine.endsWith("GET /T")) {
-           testPushed = true;    // This is our "Go" signal
+        if (c == '\n') {                    
+          // If the line is blank, the HTTP headers have ended.
+          // We now respond based on the detected request path.
+          if (currentLine.length() <= 2) { 
+            
+            // --- CASE 1: AJAX SCAN REQUEST ---
+            // The frontend is requesting a sensor reading without reloading the page.
+            if (requestPath.indexOf("GET /T") >= 0) {
+               Serial.println("Scan Requested...");
+               int lightLevel = analogRead(sensorPin);
+               String result = "";
+
+               // 1. PERFORM LOGIC
+               if (lightLevel > threshold) {
+                 result = "RED";
+                 Serial.println("Result: UNSAFE");
+               } else {
+                 result = "GREEN";
+                 Serial.println("Result: SAFE");
+               }
+
+               // 2. SEND RESPONSE IMMEDIATELY 
+               // We send the data and close the connection BEFORE the blinking starts
+               // so the browser can update the UI instantly.
+               client.println("HTTP/1.1 200 OK");
+               client.println("Content-Type: text/plain; charset=utf-8");
+               client.println("Connection: close");
+               client.println("Access-Control-Allow-Origin: *"); 
+               client.println();
+               client.print(result);
+               client.flush(); // Ensure data is sent
+               client.stop();  // Disconnect client to trigger frontend success
+
+               // 3. VISUAL FEEDBACK (BLOCKING)
+               // Now that the phone has its answer, we can block the CPU for the light show.
+               if (result == "RED") {
+                 for (int i = 0; i < 20; i++) { 
+                   digitalWrite(redPin, HIGH); delay(100);
+                   digitalWrite(redPin, LOW);  delay(100);
+                 }
+               } else {
+                 for (int i = 0; i < 20; i++) { 
+                   digitalWrite(greenPin, HIGH); delay(100);
+                   digitalWrite(greenPin, LOW);  delay(100);
+                 }
+               }
+            }
+            
+            // --- CASE 2: INITIAL PAGE LOAD ---
+            // Serve the HTML interface. The content is split into smaller strings
+            // to ensure the network buffer does not overflow during transmission.
+            else {
+               client.println("HTTP/1.1 200 OK");
+               client.println("Content-Type: text/html; charset=utf-8"); 
+               client.println("Connection: close");  
+               client.println();
+               
+               client.print(HTML_HEAD);
+               client.print(HTML_CSS_CORE); // Layout styles
+               client.print(HTML_CSS_BTN);  // Button animation styles
+               client.print(HTML_BODY_TOP);
+               client.print(HTML_LOGO);
+               client.print(HTML_MENU);
+               client.print(HTML_CONTROLS);
+               client.print(HTML_SCRIPTS);
+            }
+            
+            break;
+          } else { 
+            // Capture the HTTP method and path
+            if (currentLine.startsWith("GET ")) requestPath = currentLine;
+            currentLine = ""; 
+          }
+        } else if (c != '\r') { 
+          // Character is part of the current line, keep reading
         }
       }
     }
     client.stop(); 
-  }
-
-  // --- TRIGGER LOGIC ---
-  // If the button was pushed, run the sequence ONCE
-  if (testPushed) {
-    
-    int winningPin;
-
-    // 1. DECIDE: Look at the light level right now
-    if (lightLevel > threshold) {
-      winningPin = redPin;   // It's Bright!
-      Serial.println("Result: Red");
-    } else {
-      winningPin = greenPin; // It's Dark!
-      Serial.println("Result: Green");
-    }
-    
-    // 2. DELAY: Optional 1s pause for suspense
-    delay(500); 
-
-    // 3. ACTION: Flash the chosen LED 10 times
-    for (int i = 0; i < 10; i++) {
-      digitalWrite(winningPin, HIGH);
-      delay(150);
-      digitalWrite(winningPin, LOW);
-      delay(150);
-    }
-
-    // 4. RESET: Set testPushed to false so it stops until the next click
-    testPushed = false; 
-    isTriggered = true; // Prevents re-triggering until light reset if needed
-  }
-
-  // Reset logic for the light sensor threshold
-  if (analogRead(sensorPin) < (threshold - 50)) {
-    isTriggered = false;
   }
 }
