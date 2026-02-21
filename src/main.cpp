@@ -14,27 +14,29 @@
 #include <Arduino.h> 
 #include <SPI.h>
 #include <WiFiNINA.h>
+#include "header.h"
 #include "website.h" 
 
 // --- NETWORK CONFIGURATION ---
-const char* ssid = "Goodfellas 2.4GHz"; 
-const char* password = "forgetaboutit";
+// WiFi credentials are injected at compile-time from .env via platformio.ini
+#ifndef WIFI_SSID
+#define WIFI_SSID "YourNetworkName"
+#endif
+#ifndef WIFI_PASSWORD
+#define WIFI_PASSWORD "YourPassword"
+#endif
+
+const char* ssid = WIFI_SSID; 
+const char* password = WIFI_PASSWORD;
 
 WiFiServer server(80); 
 
-// --- HARDWARE PIN ASSIGNMENTS ---
-const int redPin = A2;    
-const int greenPin = A1;  
-const int sensorPin = A5; 
-
-// --- SENSOR CALIBRATION ---
-// Threshold determines the transition point between "Safe" and "Unsafe" readings.
-const int threshold = 700;      
+// Hardware configuration and sensor settings are now in header.h      
 
 void setup() {
-  // Initialize hardware pins
-  pinMode(redPin, OUTPUT);
-  pinMode(greenPin, OUTPUT);
+  // Initialize hardware pins (configuration from header.h)
+  pinMode(RED_PIN, OUTPUT);
+  pinMode(GREEN_PIN, OUTPUT);
   
   // Initialize serial communication for debugging
   Serial.begin(9600); 
@@ -92,11 +94,11 @@ void loop() {
             // The frontend is requesting a sensor reading without reloading the page.
             if (requestPath.indexOf("GET /T") >= 0) {
                Serial.println("Scan Requested...");
-               int lightLevel = analogRead(sensorPin);
+               int lightLevel = analogRead(SENSOR_PIN);
                String result = "";
 
                // 1. PERFORM LOGIC
-               if (lightLevel > threshold) {
+               if (lightLevel > SENSOR_THRESHOLD) {
                  result = "RED";
                  Serial.println("Result: UNSAFE");
                } else {
@@ -119,14 +121,14 @@ void loop() {
                // 3. VISUAL FEEDBACK (BLOCKING)
                // Now that the phone has its answer, we can block the CPU for the light show.
                if (result == "RED") {
-                 for (int i = 0; i < 20; i++) { 
-                   digitalWrite(redPin, HIGH); delay(100);
-                   digitalWrite(redPin, LOW);  delay(100);
+                 for (int i = 0; i < BLINK_COUNT; i++) { 
+                   digitalWrite(RED_PIN, HIGH); delay(BLINK_ON_TIME);
+                   digitalWrite(RED_PIN, LOW);  delay(BLINK_OFF_TIME);
                  }
                } else {
-                 for (int i = 0; i < 20; i++) { 
-                   digitalWrite(greenPin, HIGH); delay(100);
-                   digitalWrite(greenPin, LOW);  delay(100);
+                 for (int i = 0; i < BLINK_COUNT; i++) { 
+                   digitalWrite(GREEN_PIN, HIGH); delay(BLINK_ON_TIME);
+                   digitalWrite(GREEN_PIN, LOW);  delay(BLINK_OFF_TIME);
                  }
                }
             }
