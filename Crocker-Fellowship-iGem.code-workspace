@@ -1,0 +1,14 @@
+{
+	"folders": [
+		{
+			"path": "."
+		}
+	],
+	"settings": {
+		"files.exclude": {
+			".pio": true,
+			".vscode/.browse.c_cpp.db*": true
+		},
+		"C_Cpp.intelliSenseEngine": "disabled"
+	}
+}
