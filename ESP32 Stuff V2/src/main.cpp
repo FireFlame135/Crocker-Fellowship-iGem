@@ -22,9 +22,10 @@ const char* password = "jesuslovesyou";
 WiFiServer server(80); 
 
 // --- HARDWARE PIN ASSIGNMENTS ---
-const int redPin = D1;    
-const int greenPin = D2;  
-const int sensorPin = A0; // labeled D0 on the seeed but we want analog input
+const int redPin = A1;    
+const int greenPin = A2; 
+const int bluePin = A3; 
+const int sensorPin = A0; 
 
 // --- SENSOR CALIBRATION ---
 // Threshold determines the transition point between "Safe" and "Unsafe" readings.
