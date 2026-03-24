@@ -17,19 +17,19 @@
 #include "website.h" 
 
 // --- NETWORK CONFIGURATION ---
-const char* ssid = "Goodfellas 2.4GHz"; 
-const char* password = "forgetaboutit";
+const char* ssid = "Jordan's S23 FE"; 
+const char* password = "jesuslovesyou";
 
 WiFiServer server(80); 
 
 // --- HARDWARE PIN ASSIGNMENTS ---
 const int redPin = A2;    
 const int greenPin = A1;  
-const int sensorPin = A5; 
+const int sensorPin = A4; 
 
 // --- SENSOR CALIBRATION ---
 // Threshold determines the transition point between "Safe" and "Unsafe" readings.
-const int threshold = 700;      
+const int threshold = 75;      
 
 void setup() {
   // Initialize hardware pins
@@ -69,6 +69,9 @@ void setup() {
 
 void loop() {
   WiFiClient client = server.available(); 
+  Serial.print("Raw Sensor Value: ");
+  Serial.println(analogRead(sensorPin));
+  delay(2000);
 
   if (client) {                     
     String currentLine = "";                
