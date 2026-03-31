@@ -1,0 +1,10 @@
+## PlatformIO (legacy Arduino subproject)
+.pio/
+
+## VS Code (track only extensions recommendations)
+.vscode/*
+!.vscode/extensions.json
+
+## VS Code C/C++ cache
+.vscode/.browse.c_cpp.db*
+.vscode/ipch/

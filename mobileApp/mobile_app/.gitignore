@@ -1,0 +1,29 @@
+## Flutter project ignores (app)
+
+# IDE files
+*.iml
+
+# Tooling + build outputs
+.dart_tool/
+.flutter-plugins
+.flutter-plugins-dependencies
+.metadata
+build/
+coverage/
+
+# Android build outputs
+android/.gradle/
+android/app/.cxx/
+android/app/build/
+android/local.properties
+
+# iOS build outputs
+ios/Flutter/.last_build_id
+
+# Dart API docs (if generated)
+doc/api/
+
+# Out-of-scope Flutter desktop targets (keep Android+iOS+web only)
+linux/
+macos/
+windows/
