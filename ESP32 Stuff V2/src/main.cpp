@@ -1,169 +1,106 @@
-/* * ======================================================================================
- * Project:      AllSafe Food Scanner v1.0
- * File Path:    src/main.cpp
- * Description:  
- * This file acts as the central controller for the device. It performs three main roles:
- * 1. Hardware Management: Initializes GPIO pins for LEDs and reads analog sensor data.
- * 2. Network Server: Connects to WiFi and establishes a web server on port 80.
- * 3. Request Handling: implementing a "No-Refresh" AJAX workflow. It serves the 
- * frontend interface in fragmented packets to preserve memory and handles 
- * background scan requests (/T) by returning raw text data.
- * ======================================================================================
- */
-
 #include <Arduino.h>
-#include <WiFi.h>
-#include "website.h" 
+#include <BLEDevice.h>
+#include <BLEServer.h>
+#include <BLEUtils.h>
+#include <BLE2902.h>
 
-// --- NETWORK CONFIGURATION ---
-const char* ssid = "Jordan's S23 FE"; 
-const char* password = "jesuslovesyou";
+// --- BLE CONFIGURATION ---
+// These UUIDs identify the specific Food Scanner service
+#define SERVICE_UUID        "4fafc201-1fb5-459e-8fcc-c5c9c331914b"
+#define CHARACTERISTIC_UUID "beb5483e-36e1-4688-b7f5-ea07361b26a8"
 
-WiFiServer server(80); 
+BLEServer* pServer = NULL;
+BLECharacteristic* pCharacteristic = NULL;
+bool deviceConnected = false;
 
-// --- HARDWARE PIN ASSIGNMENTS ---
-const int redPin = A1;    
-const int greenPin = A2; 
-const int bluePin = A3; 
-const int sensorPin = A0; 
+// --- HARDWARE PIN ASSIGNMENTS (XIAO ESP32-S3) ---
+const int redPin = 2;    // D1
+const int greenPin = 3;  // D2
+const int sensorPin = 1; // D0 (Analog Input)
+const int threshold = 2500; 
 
-// --- SENSOR CALIBRATION ---
-// Threshold determines the transition point between "Safe" and "Unsafe" readings.
-const int threshold = 500;      
+// Callback class to monitor connection status
+class MyServerCallbacks: public BLEServerCallbacks {
+    void onConnect(BLEServer* pServer) {
+      deviceConnected = true;
+      Serial.println("Phone Connected!");
+    };
+
+    void onDisconnect(BLEServer* pServer) {
+      deviceConnected = false;
+      Serial.println("Phone Disconnected!");
+      // Restart advertising so it can be found again
+      pServer->getAdvertising()->start();
+    }
+};
 
 void setup() {
-  // Initialize hardware pins
+  Serial.begin(115200);
   pinMode(redPin, OUTPUT);
   pinMode(greenPin, OUTPUT);
-  
-  // Initialize serial communication for debugging
-  Serial.begin(115200); // ESP32 standard baud rate
 
-  // Wait for serial monitor to open (with 5-second timeout for standalone operation)
-  unsigned long startWait = millis();
-  while (!Serial && millis() - startWait < 5000); 
+  // 1. Initialize BLE Device
+  BLEDevice::init("ChompSafe-Scanner");
 
-  // Check for WiFi hardware
-  if (WiFi.status() == WL_NO_MODULE) {
-    Serial.println("WiFi Module Failed!");
-    while (true);
-  }
+  // 2. Create the BLE Server
+  pServer = BLEDevice::createServer();
+  pServer->setCallbacks(new MyServerCallbacks());
 
-  // Attempt to connect to the WiFi network
-  Serial.print("Connecting to: ");
-  Serial.println(ssid);
+  // 3. Create the BLE Service
+  BLEService *pService = pServer->createService(SERVICE_UUID);
 
-  while (WiFi.status() != WL_CONNECTED) {
-    WiFi.begin(ssid, password);
-    Serial.print(".");
-    delay(2000); 
-  }
+  // 4. Create the BLE Characteristic (Read + Notify)
+  pCharacteristic = pService->createCharacteristic(
+                      CHARACTERISTIC_UUID,
+                      BLECharacteristic::PROPERTY_READ   |
+                      BLECharacteristic::PROPERTY_WRITE  |
+                      BLECharacteristic::PROPERTY_NOTIFY
+                    );
 
-  // Output connection details
-  Serial.println("\nConnected!");
-  Serial.print("IP Address: ");
-  Serial.println(WiFi.localIP());
-  
-  server.begin(); 
+  // Add a descriptor so the phone knows it can subscribe to notifications
+  pCharacteristic->addDescriptor(new BLE2902());
+
+  // 5. Start the service
+  pService->start();
+
+  // 6. Start Advertising so your S23 FE can see it
+  BLEAdvertising *pAdvertising = BLEDevice::getAdvertising();
+  pAdvertising->addServiceUUID(SERVICE_UUID);
+  pAdvertising->setScanResponse(true);
+  pAdvertising->setMinPreferred(0x06);  
+  pAdvertising->start();
+
+  Serial.println("BLE Active. Waiting for phone...");
 }
 
 void loop() {
-  WiFiClient client = server.available(); 
-  Serial.print("Raw Sensor Value: ");
-  Serial.println(analogRead(sensorPin));
-  delay(2000);
+  // We simulate the "Scan" trigger. 
+  // In BLE, you can either poll the sensor or wait for a phone command.
+  // Here, we'll scan whenever light is detected.
+  
+  int lightLevel = analogRead(sensorPin);
 
-  if (client) {                     
-    String currentLine = "";                
-    String requestPath = ""; 
+  if (lightLevel > threshold) {
+    Serial.print("Scan Triggered! Value: ");
+    Serial.println(lightLevel);
 
-    // Process the incoming client request
-    while (client.connected()) {            
-      if (client.available()) {             
-        char c = client.read();             
-        
-        // Accumulate characters to detect the request type (GET /T vs GET /)
-        // Limiting length prevents memory exhaustion on long headers
-        if (currentLine.length() < 100) currentLine += c;
+    // Perform logic
+    String result = (random(0, 2) == 0) ? "RED" : "GREEN";
 
-        if (c == '\n') {                    
-          // If the line is blank, the HTTP headers have ended.
-          // We now respond based on the detected request path.
-          if (currentLine.length() <= 2) { 
-            
-            // --- CASE 1: AJAX SCAN REQUEST ---
-            // The frontend is requesting a sensor reading without reloading the page.
-            if (requestPath.indexOf("GET /T") >= 0) {
-               Serial.println("Scan Requested...");
-               int lightLevel = analogRead(sensorPin);
-               String result = "";
-
-               // 1. PERFORM LOGIC
-               if (lightLevel > threshold) {
-                 result = "RED";
-                 Serial.println("Result: UNSAFE");
-               } else {
-                 result = "GREEN";
-                 Serial.println("Result: SAFE");
-               }
-
-               // 2. SEND RESPONSE IMMEDIATELY 
-               // We send the data and close the connection BEFORE the blinking starts
-               // so the browser can update the UI instantly.
-               client.println("HTTP/1.1 200 OK");
-               client.println("Content-Type: text/plain; charset=utf-8");
-               client.println("Connection: close");
-               client.println("Access-Control-Allow-Origin: *"); 
-               client.println();
-               client.print(result);
-               client.flush(); // Ensure data is sent
-               client.stop();  // Disconnect client to trigger frontend success
-
-               // 3. VISUAL FEEDBACK (BLOCKING)
-               // Now that the phone has its answer, we can block the CPU for the light show.
-               if (result == "RED") {
-                 for (int i = 0; i < 20; i++) { 
-                   digitalWrite(redPin, HIGH); delay(100);
-                   digitalWrite(redPin, LOW);  delay(100);
-                 }
-               } else {
-                 for (int i = 0; i < 20; i++) { 
-                   digitalWrite(greenPin, HIGH); delay(100);
-                   digitalWrite(greenPin, LOW);  delay(100);
-                 }
-               }
-            }
-            
-            // --- CASE 2: INITIAL PAGE LOAD ---
-            // Serve the HTML interface. The content is split into smaller strings
-            // to ensure the network buffer does not overflow during transmission.
-            else {
-               client.println("HTTP/1.1 200 OK");
-               client.println("Content-Type: text/html; charset=utf-8"); 
-               client.println("Connection: close");  
-               client.println();
-               
-               client.print(HTML_HEAD);
-               client.print(HTML_CSS_CORE); // Layout styles
-               client.print(HTML_CSS_BTN);  // Button animation styles
-               client.print(HTML_BODY_TOP);
-               client.print(HTML_LOGO);
-               client.print(HTML_MENU);
-               client.print(HTML_CONTROLS);
-               client.print(HTML_SCRIPTS);
-            }
-            
-            break;
-          } else { 
-            // Capture the HTTP method and path
-            if (currentLine.startsWith("GET ")) requestPath = currentLine;
-            currentLine = ""; 
-          }
-        } else if (c != '\r') { 
-          // Character is part of the current line, keep reading
-        }
-      }
+    // 1. Update BLE Characteristic
+    if (deviceConnected) {
+      pCharacteristic->setValue(result.c_str());
+      pCharacteristic->notify(); // Push the "RED" or "GREEN" text to the phone
+      Serial.println("Result sent via BLE: " + result);
     }
-    client.stop(); 
+
+    // 2. Visual Feedback (Blinking)
+    int activePin = (result == "RED") ? redPin : greenPin;
+    for (int i = 0; i < 10; i++) {
+      digitalWrite(activePin, HIGH); delay(100);
+      digitalWrite(activePin, LOW);  delay(100);
+    }
+    
+    delay(1000); // Cooldown to prevent double-scans
   }
 }
