@@ -95,7 +95,7 @@ stateDiagram-v2
 ```
 
 ## BLE GATT profile (proposed)
-### Custom service: `AllSafeService`
+### Custom service: `ChompSafeService`
 Use a single custom service UUID (project-owned) with multiple characteristics.
 
 #### Characteristics

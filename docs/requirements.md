@@ -26,7 +26,7 @@ Legacy Arduino WiFi/web-server code remains reference behavior, not active featu
 
 ## BLE integration requirements (future phase)
 ### Device
-- **DEV-001 Advertising**: Device SHALL advertise over BLE with a recognizable name (e.g. `AllSafe-XXXX`).
+- **DEV-001 Advertising**: Device SHALL advertise over BLE with a recognizable name (e.g. `ChompSafe-XXXX`).
 - **DEV-002 Connect**: Device SHALL accept BLE connection from mobile app.
 - **DEV-003 Device info**: Device SHALL expose firmware version + device identifier via readable characteristic.
 - **DEV-004 Scan command**: Device SHALL accept `SCAN` command via writable characteristic.

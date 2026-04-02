@@ -1,5 +1,5 @@
 /* * ======================================================================================
- * Project:      AllSafe Food Scanner v1.0
+ * Project:      ChompSafe Food Scanner v1.0
  * File Path:    src/website.h
  * Description:  
  * This file serves as the frontend repository. It stores HTML, CSS, SVG Graphics, 
@@ -22,7 +22,7 @@ const char HTML_HEAD[] = R"=====(
 <head>
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <meta charset="UTF-8">
-    <title>AllSafe</title>
+    <title>ChompSafe</title>
     <link rel="icon" href='data:image/svg+xml;utf8,<svg viewBox="0 0 75 92" xmlns="http://www.w3.org/2000/svg"><path fill="%2368b0ab" d="M20.9,56c4.3,6.2,9,11.9,15,16.5c2.2,1.7,5.4,1.3,6.3-1.7C46.2,56.5,54.2,41.5,64.8,30.9c3.4-3.4-1.9-8.7-5.3-5.3C48,37.1,39.4,53.2,35,68.8l6.3-1.7c-5.5-4.3-9.8-9.3-13.8-15c-2.7-3.9-9.2-0.2-6.5,3.8Z"/><polygon fill="%234b7c59" points="48 58.4 62.2 58.4 56.9 42.4 60.2 38.1 72.5 74.2 67.2 74.2 63 62.1 46.5 62.1 48 58.4"/><g><path fill="%2368b0ab" d="M37.4,0C31.8,0.2,28.2,4.9,24.1,8C16.5,15.6,1.2,13.1,1,19.6c-5.5,28.5,11.8,57.3,36.6,70.6l3.5-1.9c-1-0.6-1.1-2.5-1.2-2.5C22.1,76,8.3,58.8,5.4,38.4c-0.9-5.8-1-14.3,0.5-18.9c-0.2,0.5,0.4-0.3-0.1,0.1c-0.2,0.2-0.3,0.4-0.6,0.5c6.9,0.6,22.1-7.1,27.6-13.4c-1.7-1.3,3-1.8-4.2-1.9C25.4,4.6,25.4-0.4,28.6-0.2"/><path fill="%2368b0ab" d="M63.7,67.8c-6.6,9.3-15.5,16.8-25.4,22.5l-3.4-1.9c0.1,0.1,0.1-2,1.1-2.6C45.6,80.3,60.9,63.3,60.9,63.3h1.6"/><path fill="%2368b0ab" d="M66.5,52.4c4.2-10.4,5.8-23.7,3.3-32.7c0.2,0.5-0.4-0.3,0.1,0.1c0.2,0.2,0.3,0.4,0.6,0.5c-6.9,0.6-22.1-7.1-27.6-13.4c-1.7-1.3-3-1.8-4.2-1.9c-3.2-0.2-3.2-5.2,0-5c5.6,0.2,9.1,4.9,13.2,8c5,4.2,13,6.5,20.1,7.6C81.1,23,73.6,49.8,68.9,59.2"/></g></svg>'>
 )=====";
 
@@ -205,7 +205,7 @@ const char HTML_MENU[] = R"=====(
 // --- PART 6: CONTROLS ---
 const char HTML_CONTROLS[] = R"=====(
         <button id="scanBtn" class="btn" onclick="scanFood()">SCAN FOOD</button>
-        <p style="font-size:12px; color:#8FC0A9; margin-top:20px;">AllSafe Food Scanner v1.0</p>
+        <p style="font-size:12px; color:#8FC0A9; margin-top:20px;">ChompSafe Food Scanner v1.0</p>
     </div> 
 )=====";
 

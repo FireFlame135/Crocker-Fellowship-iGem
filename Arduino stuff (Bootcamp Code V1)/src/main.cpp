@@ -1,5 +1,5 @@
 /* * ======================================================================================
- * Project:      AllSafe Food Scanner v1.0
+ * Project:      ChompSafe Food Scanner v1.0
  * File Path:    src/main.cpp
  * Description:  
  * This file acts as the central controller for the device. It performs three main roles:

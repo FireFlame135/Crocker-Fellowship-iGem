@@ -5,11 +5,11 @@ import 'package:shared_preferences/shared_preferences.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
-  runApp(const AllSafeApp());
+  runApp(const ChompSafeApp());
 }
 
-class AllSafeApp extends StatelessWidget {
-  const AllSafeApp({super.key});
+class ChompSafeApp extends StatelessWidget {
+  const ChompSafeApp({super.key});
 
   @override
   Widget build(BuildContext context) {
@@ -21,19 +21,19 @@ class AllSafeApp extends StatelessWidget {
         scaffoldBackgroundColor: const Color(0xFFFAF3DD),
         useMaterial3: true,
       ),
-      home: const AllSafeHomePage(),
+      home: const ChompSafeHomePage(),
     );
   }
 }
 
-class AllSafeHomePage extends StatefulWidget {
-  const AllSafeHomePage({super.key});
+class ChompSafeHomePage extends StatefulWidget {
+  const ChompSafeHomePage({super.key});
 
   @override
-  State<AllSafeHomePage> createState() => _AllSafeHomePageState();
+  State<ChompSafeHomePage> createState() => _ChompSafeHomePageState();
 }
 
-class _AllSafeHomePageState extends State<AllSafeHomePage> {
+class _ChompSafeHomePageState extends State<ChompSafeHomePage> {
   static const List<String> _allergenNames = <String>[
     'Milk',
     'Eggs',
@@ -211,7 +211,7 @@ class _AllSafeHomePageState extends State<AllSafeHomePage> {
                 crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: <Widget>[
                   const SizedBox(height: 8),
-                  const _AllSafeHeader(),
+                  const _ChompSafeHeader(),
                   const SizedBox(height: 12),
                   _AllergenCard(
                     allergenNames: _allergenNames,
@@ -271,8 +271,8 @@ class _AllSafeHomePageState extends State<AllSafeHomePage> {
   }
 }
 
-class _AllSafeHeader extends StatelessWidget {
-  const _AllSafeHeader();
+class _ChompSafeHeader extends StatelessWidget {
+  const _ChompSafeHeader();
 
   @override
   Widget build(BuildContext context) {

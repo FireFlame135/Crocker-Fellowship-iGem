@@ -1,9 +1,9 @@
-# AllSafe Food Scanner v1.0
+# ChompSafe Food Scanner v1.0
 
 ![License](https://img.shields.io/badge/license-Proprietary-red)
 ![Platform](https://img.shields.io/badge/platform-Arduino%20MKR%20WiFi%201010-blue)
 
-This repository houses the embedded software for the **AllSafe Food Scanner**, an iGEM project device that uses optical sensing to detect food contamination. The device provides real-time analysis through a wireless web interface accessible via smartphone or computer.
+This repository houses the embedded software for the **ChompSafe Food Scanner**, an iGEM project device that uses optical sensing to detect food contamination. The device provides real-time analysis through a wireless web interface accessible via smartphone or computer.
 
 **Made possible through the Crocker Fellowship at BYU.**
 
@@ -11,7 +11,7 @@ This repository houses the embedded software for the **AllSafe Food Scanner**, a
 
 ## 📋 Project Overview
 
-The AllSafe Food Scanner is an Arduino-based IoT device that:
+The ChompSafe Food Scanner is an Arduino-based IoT device that:
 - Reads analog sensor data from a light sensor (A5)
 - Compares readings against a calibration threshold
 - Provides visual feedback via red/green LEDs
@@ -136,7 +136,7 @@ Adjust this value in `.env` based on your specific sensor and lighting condition
 ## 🌐 Web Interface
 
 The device hosts a lightweight web server on port 80. The interface includes:
-- **Visual branding** (AllSafe logo, color scheme)
+- **Visual branding** (ChompSafe logo, color scheme)
 - **Scan button** with holographic animation effects
 - **AJAX-based scanning** (no page refresh required)
 - **Real-time results** displayed instantly

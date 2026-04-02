@@ -1,5 +1,5 @@
 /* * ======================================================================================
- * Project:      AllSafe Food Scanner v1.0
+ * Project:      ChompSafe Food Scanner v1.0
  * File Path:    include/header.h
  * Description:  
  * Central configuration header containing all hardware pin assignments and sensor
