@@ -117,7 +117,7 @@ void loop() {
                String result = "";
 
                // 1. PERFORM LOGIC
-               if (lightLevel > SENSOR_THRESHOLD) {
+               if (lightLevel > 700) {
                  result = "RED";
                  Serial.println("Result: UNSAFE");
                } else {

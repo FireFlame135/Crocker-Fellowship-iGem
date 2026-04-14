@@ -18,21 +18,6 @@
 #include "website.h" 
 
 // --- NETWORK CONFIGURATION ---
-<<<<<<<< HEAD:Arduino stuff (Bootcamp Code V1)/src/main.cpp
-const char* ssid = "Jordan's S23 FE"; 
-const char* password = "jesuslovesyou";
-
-WiFiServer server(80); 
-
-// --- HARDWARE PIN ASSIGNMENTS ---
-const int redPin = A2;    
-const int greenPin = A1;  
-const int sensorPin = A4; 
-
-// --- SENSOR CALIBRATION ---
-// Threshold determines the transition point between "Safe" and "Unsafe" readings.
-const int threshold = 75;      
-========
 // WiFi credentials are injected at compile-time from .env via platformio.ini
 #ifndef WIFI_SSID
 #define WIFI_SSID "YourNetworkName"
@@ -47,7 +32,6 @@ const char* password = WIFI_PASSWORD;
 WiFiServer server(80); 
 
 // Hardware configuration and sensor settings are now in header.h      
->>>>>>>> fe3a983574720c6ca367a7903b777b44b283d586:src/main.cpp
 
 void setup() {
   // Initialize hardware pins (configuration from header.h)
@@ -88,7 +72,7 @@ void setup() {
 void loop() {
   WiFiClient client = server.available(); 
   Serial.print("Raw Sensor Value: ");
-  Serial.println(analogRead(sensorPin));
+  Serial.println(analogRead(SENSOR_PIN));
   delay(2000);
 
   if (client) {                     
@@ -117,7 +101,7 @@ void loop() {
                String result = "";
 
                // 1. PERFORM LOGIC
-               if (lightLevel > SENSOR_THRESHOLD) {
+               if (lightLevel > 700) {
                  result = "RED";
                  Serial.println("Result: UNSAFE");
                } else {
