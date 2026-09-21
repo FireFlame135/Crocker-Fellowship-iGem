@@ -8,6 +8,9 @@ const int PWM_CHANNEL = 0;       // LEDC Channel 0 (0-15 available)
 const int PWM_FREQ = 5000;       // 5 kHz frequency
 const int PWM_RESOLUTION = 8;    // 8-bit resolution (0 to 255)
 
+// Power Tuning (Lower power = less core heat = far less residual magnetism)
+const int HOLD_DUTY = 180;       // ~70% power (enough to hold, avoids core saturation)
+
 void setup() {
   Serial.begin(115200);
 
@@ -20,28 +23,40 @@ void setup() {
   // Start with magnet fully de-energized
   ledcWrite(PWM_CHANNEL, 0);
 
-  Serial.println("Electromagnet PWM controller initialized.");
+  Serial.println("Electromagnet PWM controller initialized with demagnetization sequence.");
 }
 
-void turnOffMagnetSmoothly() {
-  // Rapidly ramp down duty cycle from 255 (100%) down to 0 over ~100ms
-  for (int duty = 255; duty >= 0; duty -= 15) {
-    ledcWrite(PWM_CHANNEL, duty);
-    delay(5);
+void turnOffMagnetWithDegaussDecay() {
+  // Step 1: Rapid decaying oscillation simulation (exponential duty drop)
+  // Stepping down with non-linear intervals breaks residual flux alignment
+  int dutySteps[] = {180, 120, 160, 90, 120, 50, 70, 20, 30, 0};
+  int numSteps = sizeof(dutySteps) / sizeof(dutySteps[0]);
+
+  for (int i = 0; i < numSteps; i++) {
+    ledcWrite(PWM_CHANNEL, dutySteps[i]);
+    delay(15); // Short bursts allow flux field relaxation
   }
-  ledcWrite(PWM_CHANNEL, 0); // Ensure output is 0V
+
+  // Step 2: Ensure hard 0V output
+  ledcWrite(PWM_CHANNEL, 0);
+  pinMode(ELECTROMAGNET_PIN, OUTPUT);
+  digitalWrite(ELECTROMAGNET_PIN, LOW);
 }
 
 void loop() {
-  // 1. Turn ON the electromagnet at 100% duty cycle
-  Serial.println("Electromagnet ON (Engaged)");
+  // 1. Strike initial attraction at full power for 100ms
+  Serial.println("Electromagnet ON (Engaging)");
   ledcWrite(PWM_CHANNEL, 255);
-  delay(3000); // Hold for 2 seconds
+  delay(100); 
 
-  // 2. Smoothly taper OFF to break residual magnetism
-  Serial.println("Electromagnet OFF (Disengaging)");
-  turnOffMagnetSmoothly();
+  // 2. Drop to holding power (180) to reduce heat & domain lock-in
+  ledcWrite(PWM_CHANNEL, HOLD_DUTY);
+  delay(2900); // Complete 3-second hold cycle
 
-  // 3. Rest period to prevent overheating
-  delay(4000); // Rest for 3 seconds
+  // 3. Run demagnetization release decay
+  Serial.println("Electromagnet OFF (Decaying Residual Magnetism)");
+  turnOffMagnetWithDegaussDecay();
+
+  // 4. Rest period to let coil & core cool completely
+  delay(4000); 
 }
